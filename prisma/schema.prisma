@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+model Venue {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  layouts     Layout[]
+  shows       Show[]
+}
+
+model Layout {
+  id        String   @id @default(cuid())
+  name      String
+  svgData   String
+  venueId   String
+  venue     Venue    @relation(fields: [venueId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  shows     Show[]
+  seats     Seat[]
+}
+
+model Show {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  startTime       DateTime
+  endTime         DateTime
+  venueId         String
+  venue           Venue    @relation(fields: [venueId], references: [id])
+  layoutId        String
+  layout          Layout   @relation(fields: [layoutId], references: [id])
+  integrationCode String   @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  seats           Seat[]
+}
+
+model Seat {
+  id           String      @id @default(cuid())
+  number       String
+  row          String
+  section      String
+  status       String      @default("AVAILABLE")
+  layoutId     String
+  layout       Layout      @relation(fields: [layoutId], references: [id])
+  showId       String
+  show         Show        @relation(fields: [showId], references: [id])
+  bookingId    String?
+  reservedUntil DateTime?
+  reservedBy   String?
+  apiKey       ApiKey?     @relation(fields: [reservedBy], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  reservations Reservation[]
+}
+
+model ApiKey {
+  id          String        @id @default(cuid())
+  keyHash     String        @unique
+  name        String
+  permissions Json
+  rateLimit   Int           @default(100)
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  lastUsedAt  DateTime?
+  seats       Seat[]
+  reservations Reservation[]
+  apiLogs     ApiLog[]
+}
+
+model Reservation {
+  id                String    @id @default(cuid())
+  seatIds           String[]
+  seats             Seat[]    @relation()
+  showId            String
+  externalBookingId String?
+  apiKeyId          String
+  apiKey            ApiKey    @relation(fields: [apiKeyId], references: [id])
+  expiresAt         DateTime
+  createdAt         DateTime  @default(now())
+  metadata          Json?
+}
+
+model ApiLog {
+  id             String    @id @default(cuid())
+  apiKeyId       String
+  apiKey         ApiKey    @relation(fields: [apiKeyId], references: [id])
+  endpoint       String
+  method         String
+  statusCode     Int
+  responseTimeMs Int?
+  createdAt      DateTime  @default(now())
+  ipAddress      String?
+  userAgent      String?
+}

@@ -27,6 +27,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <div className="debug-message">
+          [DEBUG] RootLayout is rendering!
+        </div>
         {children}
       </body>
     </html>
